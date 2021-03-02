@@ -1,0 +1,97 @@
+<h1>Multi-Strategy Search</h1>
+<p>In this assignment, you'll implement a multi-strategy search method
+for TicTacToe.  Similar to minimax, you'll create an algorithm that
+expands a full game tree, and then propagates information about
+the games' outcomes back from terminal states (end games) to the
+root of the search tree.  See the slides on Canvas for examples
+of how the calculation should take place.</p>
+<h1>Overview</h1>
+<ol>
+<li>Download the stub <code>msttt.py</code>.</li>
+<li>Look through the code.  I've written some functionality,
+   and the goal is for you to complete it.</li>
+<li>The doc-comment at the top of the file has some warm-up questions to help
+   you start thinking through the problem. It also has some graded questions
+   that you will need to answer (with help from your code).</li>
+<li>As before the code assumes four spaces of indentation.
+   Set your editor appropriately, this is the default for many.</li>
+</ol>
+<h1>Implement the methods / functions</h1>
+<p>Once the methods are implemented, you should be able to run code
+from the command line, although the test suite will just call
+your methods directly.</p>
+<p>You should be able to reproduce the example from the slides:</p>
+<pre><code>&gt; python msttt.py --state 111221122 evaluate
+ X | X | X
+-----------
+ O | O | X
+-----------
+ X | O | O
+BB:(0, 1, 0)
+BR:(0, 1, 0)
+RB:(0, 1, 0)
+RR:(0, 1, 0)
+
+&gt; python msttt.py --state 101221122 evaluate
+ X |   | X
+-----------
+ O | O | X
+-----------
+ X | O | O
+BB:(0, 1, 0)
+BR:(0, 1, 0)
+RB:(0, 1, 0)
+RR:(0, 1, 0)
+
+&gt; python msttt.py --state 121221120 evaluate
+ X | O | X
+-----------
+ O | O | X
+-----------
+ X | O |
+BB:(0, 0, 1)
+BR:(0, 0, 1)
+RB:(0, 0, 1)
+RR:(0, 0, 1)
+
+&gt; python msttt.py --state 101221120 evaluate
+ X |   | X
+-----------
+ O | O | X
+-----------
+ X | O |
+BB:(0, 0, 1)
+BR:(0, 1, 1)
+RB:(0, 0, 1)
+RR:(0, 1, 1)
+
+&gt; python msttt.py --state 101221020 evaluate
+ X |   | X
+-----------
+ O | O | X
+-----------
+   | O |
+BB:(0, 1, 0)
+BR:(0, 1, 0)
+RB:(0, 2, 1)
+RR:(0, 3, 1)
+
+&gt; python msttt.py --state 121201020 evaluate
+ X | O | X
+-----------
+ O |   | X
+-----------
+   | O |
+BB:(0, 1, 0)
+BR:(0, 2, 0)
+RB:(0, 2, 1)
+RR:(0, 4, 1)
+</code></pre>
+<h1>Turn in your code</h1>
+<p>Submit your code via Autolab. If you think there's a problem with the tests,
+please check the inline code specification carefully and recheck your
+results.  You may also want to look at the specific test that it's failing
+and try to reproduce that result. If it still looks like the tests are
+incorrect, send me a message and if you're correct, I'm happy to give you
+some extra credit points.</p>
+<p>https://autolab.encs.vancouver.wsu.edu</p>
