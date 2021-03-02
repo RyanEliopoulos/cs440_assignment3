@@ -215,9 +215,76 @@ class MultiStrategySearch():
 
         Hint: this method may be easiest to implement recursively.
         """
-        pass
 
-                    
+        win_check = self.is_win(tttnode)
+        if win_check:
+            if win_check[2] == 1:
+                tup = (0, 1, 0)
+            elif win_check[2] == -1:
+                tup = (0, 0, 1)
+            else:
+                tup = (1, 0, 0)
+
+            frame_dict = {
+                'BB': tup
+                , 'BR': tup
+                , 'RB': tup
+                , 'RR': tup
+            }
+
+            return frame_dict
+        # Not a winning state. We call upon our children for assistance
+
+        bb = None
+        br = None
+        rb = None
+        rr = None
+
+        best_node = None
+        for successor in self.successors(tttnode):
+            if best_node is None:  # Current node has no opinion yet
+                best_node = successor
+                ret_dict = self.evaluate_strategies(successor)
+                bb = ret_dict['BB']
+                br = ret_dict['BR']
+                rb = ret_dict['RB']
+                rr = ret_dict['RR']
+            else:
+                ret_dict = self.evaluate_strategies(successor)
+                # Establishing random values
+                successor_rr = ret_dict['RR']
+                rr = addtuples(rr, successor_rr)
+                # Deciding best values
+                successor_bb = ret_dict['BB']
+                bb = bestchoice(bb, successor_bb, tttnode.nextplayer)
+
+                successor_br = ret_dict['BR']
+                successor_rb = ret_dict['RB']
+
+                # How is one best one random decided?
+                if tttnode.nextplayer == 1:
+                    # Selecting best for x
+                    br = bestchoice(br, successor_br, tttnode.nextplayer)
+                    # Selecting random for x
+                    rb = addtuples(rb, successor_rb)
+
+                else:
+                    # Selecting best for o
+                    rb = bestchoice(rb, successor_rb, tttnode.nextplayer)
+                    # Selecting random for o
+                    br = addtuples(br, successor_br)
+
+        # Done evaluating successors. Returns outcome table.
+        outcome_table = {
+            'BB': bb
+            , 'BR': br
+            , 'RB': rb
+            , 'RR': rr
+        }
+
+        return outcome_table
+
+
 def addtuples(t1, t2):
     """ _ Part 2: Implement this function _
 
@@ -261,10 +328,9 @@ def bestchoice(t1, t2, whom):
     # tuples are [TIES, P1, P2]
     # whom is 1(P1);  -1 (P2);
 
-
     # Summing games for ratio calculations
     total_games_first = t1[0] + t1[1] + t1[2]
-    total_games_second = (t2[0] + t2[1] + t2[2])
+    total_games_second = t2[0] + t2[1] + t2[2]
 
     # Setting node reference variables
     if whom == 1:
@@ -283,23 +349,16 @@ def bestchoice(t1, t2, whom):
     elif enemy_ratio_second > enemy_ratio_first:
         return t1
     else:  # Tie on enemy win rate. Evaluating using our win rate.
-        our_ratio_first = t1[our_index] / total_games_first
-        our_ratio_second = t2[our_index] / total_games_second
 
-        if our_ratio_first > our_ratio_second:
+        if t1[our_index] > t2[our_index]:
             return t1
-        elif our_ratio_second > our_ratio_first:
+        elif t2[our_index] > t1[our_index]:
             return t2
-        else:   # Another tie. Checking tie ratios
-            tie_ratio_first = t1[0] / total_games_first
-            tie_ratio_second = t2[0] / total_games_second
-
-            if tie_ratio_first > tie_ratio_second:
+        else:  # Tie.
+            if t1[0] > t2[0]:
                 return t1
             else:
                 return t2
-
-
 
 
 if __name__ == "__main__":
@@ -337,7 +396,6 @@ if __name__ == "__main__":
             print("".join(TicTacToe.Chrs[i] for i in state[6:]))
 
         t3s = TTTNode(nextturn, state, None)
-
 
         mss = MultiStrategySearch()
         mss.show(t3s)
