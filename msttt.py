@@ -1,3 +1,13 @@
+""""
+    Ryan Paulos
+    CS 440 - Artificial Intelligence
+    Assignment 3
+    Spring 2021
+
+"""
+
+
+
 """MultiStrategy Search in TicTacToe
 
 Warm up thought questions 
