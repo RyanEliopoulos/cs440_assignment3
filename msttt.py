@@ -16,9 +16,53 @@ Graded questions (answer these):
 1. Given an initially empty 3x3 board, how many end games result in
    a win for X?
 
-2. How early can X force a win assuming O plays randomly?
+    Evaluating all possible end game leaf nodes with count_outcomes, we can see that 131,184 end games result in an
+    x win.
+
+
+2. How early can X force a win assuming O plays randomly? (BR)
+
+    X can force a win (that is, guarantee victory in subsequent moves) on their 2nd move when O plays randomly.
+    This requires X to make their first move in a corner position and O to make their first move anywhere
+    except the middle or the corner diagonally opposite from X.
+
+        # O cannot move here
+        _ _ _    X _ _
+        _ O _    _ _ _
+        _ _ _    _ _ O
+
+    Assuming X has place their first piece in the top-left corner:
+
+    1) If O moves adjacent to x (but not in the middle), X takes the center. From there optimal play from x
+       guarantees victory.
+
+       X O _
+       _ X _
+       _ _ _
+
+    2) If O moves into a corner in the same row or column as X, X takes the corner diagonal from the first piece.
+       From there optimal play from x guarantees victory.
+
+       X _ O
+       _ _ _
+       _ _ X
+
+
+    3) If O moves into the middle of the east column or south row, X takes the corner furthest from O.
+       From there optimal play from x guarantees victory
+
+       X _ _
+       _ _ O
+       X _ _
+
+
+
 
 3. How early can X force a win assuming O plays the best strategy?
+
+    X cannot force a win for themselves if O is playing the best strategy. If both players play using the best strategy
+    the game will always end in a tie.  This is corroborated by the evaluate_strategies method when passed a
+    blank board state.
 
 """
 
@@ -54,7 +98,7 @@ class MultiStrategySearch():
     def __init__(self, boardsize=3):
         self.n = boardsize
         self.n2 = boardsize**2
-        
+
     def is_win(self, tttnode):
         """ _Part 1: Implement This Method_
         
@@ -85,13 +129,13 @@ class MultiStrategySearch():
          False: if the outcome can't be determined yet
         """
 
-        # Checking horizontal win
         i = 0  # Beginning slice index
         j = self.n  # Trailing slice index
         made_last_move = 1 if tttnode.nextplayer == -1 else -1
         board = tttnode.board
         n = int(math.sqrt(len(board)))
 
+        # Checking horizontal win
         for x in range(n):
             row = board[i:j]
             if sum(row) == (made_last_move * n):
@@ -216,13 +260,14 @@ class MultiStrategySearch():
         Hint: this method may be easiest to implement recursively.
         """
 
+        # First checking for base case
         win_check = self.is_win(tttnode)
         if win_check:
             if win_check[2] == 1:
                 tup = (0, 1, 0)
             elif win_check[2] == -1:
                 tup = (0, 0, 1)
-            else:
+            elif win_check[2] == 0:
                 tup = (1, 0, 0)
 
             frame_dict = {
@@ -233,23 +278,25 @@ class MultiStrategySearch():
             }
 
             return frame_dict
-        # Not a winning state. We call upon our children for assistance
+
+        # Not a winning state. Calling upon children for assistance.
 
         bb = None
         br = None
         rb = None
         rr = None
 
-        best_node = None
+        first_node = None  # Not really best
         for successor in self.successors(tttnode):
-            if best_node is None:  # Current node has no opinion yet
-                best_node = successor
+            if first_node is None:  # Current node has no opinion yet
+                first_node = successor
                 ret_dict = self.evaluate_strategies(successor)
                 bb = ret_dict['BB']
                 br = ret_dict['BR']
+
                 rb = ret_dict['RB']
                 rr = ret_dict['RR']
-            else:
+            else:  # Considering at least a second successor node
                 ret_dict = self.evaluate_strategies(successor)
                 # Establishing random values
                 successor_rr = ret_dict['RR']
@@ -258,10 +305,9 @@ class MultiStrategySearch():
                 successor_bb = ret_dict['BB']
                 bb = bestchoice(bb, successor_bb, tttnode.nextplayer)
 
+                # Addressing mixed strategies
                 successor_br = ret_dict['BR']
                 successor_rb = ret_dict['RB']
-
-                # How is one best one random decided?
                 if tttnode.nextplayer == 1:
                     # Selecting best for x
                     br = bestchoice(br, successor_br, tttnode.nextplayer)
@@ -273,8 +319,7 @@ class MultiStrategySearch():
                     rb = bestchoice(rb, successor_rb, tttnode.nextplayer)
                     # Selecting random for o
                     br = addtuples(br, successor_br)
-
-        # Done evaluating successors. Returns outcome table.
+        # Done evaluating successors. Returning outcome table.
         outcome_table = {
             'BB': bb
             , 'BR': br
@@ -300,6 +345,7 @@ def addtuples(t1, t2):
 
     return tuple(sum_list)
 
+
 def bestchoice(t1, t2, whom):
     """ _ Part 3: Implement this function _
 
@@ -317,16 +363,7 @@ def bestchoice(t1, t2, whom):
     this is still insufficient, break ties further by
     selecting the tuple with the most stalemates.
 
-
-
-    NEED TO REWRITE TO ACCOUNT FOR THE percentage WIN RATE.
-
-    0, 0, 2 (100% win rate for o) is superior to
-    0, 3, 6 (66% win rate for o)
-
     """
-    # tuples are [TIES, P1, P2]
-    # whom is 1(P1);  -1 (P2);
 
     # Summing games for ratio calculations
     total_games_first = t1[0] + t1[1] + t1[2]
@@ -359,6 +396,7 @@ def bestchoice(t1, t2, whom):
                 return t1
             else:
                 return t2
+
 
 
 if __name__ == "__main__":
