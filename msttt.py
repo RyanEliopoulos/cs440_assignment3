@@ -33,42 +33,18 @@ Graded questions (answer these):
 2. How early can X force a win assuming O plays randomly? (BR)
 
     X can force a win (that is, guarantee victory in subsequent moves) on their 2nd move when O plays randomly.
-    This requires X to make their first move in a corner position and O to make their first move anywhere
-    except the middle or the corner diagonally opposite from X.
+    
 
-        # O cannot move here
-        _ _ _    X _ _
-        _ O _    _ _ _
-        _ _ _    _ _ O
-
-    Assuming X has place their first piece in the top-left corner:
-
-    1) If O moves adjacent to x (but not in the middle), X takes the center. From there optimal play from x
-       guarantees victory.
-
-       X O _
-       _ X _
-       _ _ _
-
-    2) If O moves into a corner in the same row or column as X, X takes the corner diagonal from the first piece.
-       From there optimal play from x guarantees victory.
-
-       X _ O
-       _ _ _
-       _ _ X
-
-
-    3) If O moves into the middle of the east column or south row, X takes the corner furthest from O.
-       From there optimal play from x guarantees victory
-
-       X _ _
-       _ _ O
-       X _ _
-
+    The included check_quickest_bb method updates the MultiStrategySearch instance with a candidate node and the shortest
+    path. This produces a TTTNode with board state (1, 0, -1, 1, 0, 0, 0, 0, 0)
+    
+    Running such a node through the evaluate_strategies method confirms the 'BR' outcomes as (0, 29, 0)
+    
 
 
 
 3. How early can X force a win assuming O plays the best strategy?
+
 
     X cannot force a win for themselves if O is playing the best strategy. If both players play using the best strategy
     the game will always end in a tie.  This is corroborated by the evaluate_strategies method when passed a
@@ -108,6 +84,10 @@ class MultiStrategySearch():
     def __init__(self, boardsize=3):
         self.n = boardsize
         self.n2 = boardsize**2
+
+        # Answering #3
+        self.quickest_bb_node = None
+        self.quickest_bb_len = None
 
     def is_win(self, tttnode):
         """ _Part 1: Implement This Method_
@@ -338,6 +318,138 @@ class MultiStrategySearch():
         }
 
         return outcome_table
+
+    def check_quickest_bb(self, tttnode, verbose=False):
+        """ _ Part 5: Implement this method _
+
+        return a dictionary representing the strategic outcome table for
+        a given input state (tttnode). If verbose is False, no
+        output should be generated on stdout or stderr.
+
+        the dictionary should have keys 'BB', 'RB', 'BR', and 'RR'
+        representing the best ('B') and random ('R') strategies
+        for player 1 (X) and player 2 (O) respectively. So 'RB'
+        corresponds to X playing randomly and O playing its best.
+        Values of this table should be a tuple of (ties, X-wins, O-wins).
+
+        Hint: this method may be easiest to implement recursively.
+        """
+
+        # First checking for base case
+        win_check = self.is_win(tttnode)
+        if win_check:
+            if win_check[2] == 1:
+                tup = (0, 1, 0)
+            elif win_check[2] == -1:
+                tup = (0, 0, 1)
+            elif win_check[2] == 0:
+                tup = (1, 0, 0)
+
+            frame_dict = {
+                'BB': tup
+                , 'BR': tup
+                , 'RB': tup
+                , 'RR': tup
+            }
+
+            return frame_dict
+
+        # Not a winning state. Calling upon children for assistance.
+
+        bb = None
+        br = None
+        rb = None
+        rr = None
+
+        first_node = None  # Not really best
+        for successor in self.successors(tttnode):
+            if first_node is None:  # Current node has no opinion yet
+                first_node = successor
+                ret_dict = self.check_quickest_bb(successor)
+                bb = ret_dict['BB']
+                br = ret_dict['BR']
+
+                rb = ret_dict['RB']
+                rr = ret_dict['RR']
+            else:  # Considering at least a second successor node
+                ret_dict = self.check_quickest_bb(successor)
+                # Establishing random values
+                successor_rr = ret_dict['RR']
+                rr = addtuples(rr, successor_rr)
+                # Deciding best values
+                successor_bb = ret_dict['BB']
+                bb = bestchoice(bb, successor_bb, tttnode.nextplayer)
+
+                # Addressing mixed strategies
+                successor_br = ret_dict['BR']
+                successor_rb = ret_dict['RB']
+                if tttnode.nextplayer == 1:
+                    # Selecting best for x
+                    br = bestchoice(br, successor_br, tttnode.nextplayer)
+                    # Selecting random for x
+                    rb = addtuples(rb, successor_rb)
+
+                else:
+                    # Selecting best for o
+                    rb = bestchoice(rb, successor_rb, tttnode.nextplayer)
+                    # Selecting random for o
+                    br = addtuples(br, successor_br)
+
+            # This version should be selecting the exact node that it considers the force win state
+            if br[0] == 0 and br[2] == 0 and br[1] > 0:
+                # Found a node where x is guaranteed to win
+                quickest_len = 1
+                if self.quickest_bb_node is None:
+                    self.quickest_bb_node = successor
+                    parent_node = tttnode
+                    while parent_node is not None:
+                        parent_node = parent_node.parent
+                        quickest_len += 1
+                    self.quickest_bb_len = quickest_len
+                else:
+                    parent_node = tttnode
+                    while parent_node is not None:
+                        parent_node = parent_node.parent
+                        quickest_len += 1
+
+                    if quickest_len < self.quickest_bb_len:
+                        self.quickest_bb_node = successor
+                        self.quickest_bb_len = quickest_len
+
+        # if bb[0] == 0 and bb[2] == 0 and bb[1] > 0:
+        #     # Found a node where x is guaranteed to win
+        #     quickest_len = 1
+        #     if self.quickest_bb_node is None:
+        #         self.quickest_bb_node = tttnode
+        #         parent_node = tttnode.parent
+        #         while parent_node is not None:
+        #             parent_node = parent_node.parent
+        #             quickest_len += 1
+        #         self.quickest_bb_len = quickest_len
+        #     else:
+        #         parent_node = tttnode.parent
+        #         while parent_node is not None:
+        #             parent_node = parent_node.parent
+        #             quickest_len += 1
+        #
+        #         if quickest_len < self.quickest_bb_len:
+        #             self.quickest_bb_node = tttnode
+        #             self.quickest_bb_len = quickest_len
+
+        # Done evaluating successors. Returning outcome table.
+        outcome_table = {
+            'BB': bb
+            , 'BR': br
+            , 'RB': rb
+            , 'RR': rr
+        }
+
+        return outcome_table
+
+
+
+
+
 
 
 def addtuples(t1, t2):
